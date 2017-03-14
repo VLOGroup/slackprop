@@ -1,0 +1,114 @@
+OPTION(WITH_MATLAB "Build mex files for MATLAB" ON)
+#____________________________________________________
+
+#--------------------------------------------------------------
+if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+     message(STATUS "Target is 64 bits")
+     if (WIN32)
+         set(WINXXBITS Win64)
+	 set(MEXEXT mexw64)
+     else()
+	set(MEXEXT mexa64)
+     endif(WIN32)
+ else("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+     message(STATUS "Target is 32 bits")
+     if (WIN32)
+         set(WINXXBITS Win32)
+	 set(MEXEXT mexw32)
+     else()
+	set(MEXEXT mexa32)
+     endif(WIN32)
+endif("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+#--------------------------------------------------------------
+
+#--------------------------------------------------------------
+# MATLAB
+#--------------------------------------------------------------
+if(WITH_MATLAB)
+  message(STATUS "build with MatLab support")
+# now matlab does not officially support some compilers, opt to ignore this
+
+include(FindPackageHandleStandardArgs)
+include(OpenCVFindMatlab.cmake.txt)
+
+message(STATUS "MATLAB_ROOT_DIR" ${MATLAB_ROOT_DIR})
+
+#find_package(MATLAB REQUIRED)
+
+message(STATUS "MATLAB_LIBRARY_DIRS:" ${MATLAB_LIBRARY_DIRS})
+message(STATUS "MATLAB_LIBRARIES:" ${MATLAB_LIBRARIES})
+
+
+#  message(STATUS "Matlab include dir: ${MATLAB_INCLUDE_DIR}")
+#  message(STATUS "Matlab libmex: ${MATLAB_MEX_LIBRARY}")
+#  message(STATUS "Matlab libeng: ${MATLAB_ENG_LIBRARY}")
+#  message(STATUS "Matlab libmx:  ${MATLAB_MX_LIBRARY}")
+
+endif(WITH_MATLAB)
+
+#___________________matlab mexes_____________________
+
+set(BUILD_SHARED_LIBS ON)
+include_directories(${MATLAB_INCLUDE_DIRS})
+
+LIST(APPEND LIBRARY_DEPENDENCIES ${MATLAB_LIBRARIES}) # ${MATLAB_MEX_LIBRARY} ${MATLAB_MX_LIBRARY} ${MATLAB_ENG_LIBRARY})
+add_definitions(-DMX_COMPAT_32)
+add_definitions(-DMATLAB_MEX_FILE)
+
+if(WIN32)
+	SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /export:mexFunction")
+	LIST(APPEND LIBRARY_DEPENDENCIES gdi32 user32)
+else()
+	SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pthread -shared -Wl,--no-undefined -fopenmp")
+	#LIST(APPEND LIBRARY_DEPENDENCIES mx mex mat m eng stdc++)
+	SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath-link,${MATLAB_LIBRARY_PATH}")
+	SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath-link,${MATLAB}/extern/lib/glnxa64")
+	SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath-link,${MATLAB}/bin/glnxa64")
+	#SET(CMAKE_SHARED_LINKER_FLAGS "-Wl,-rpath-link,/usr/lib/x86_64-linux-gnu ${CMAKE_SHARED_LINKER_FLAGS}")
+endif()
+
+message(STATUS "MATLAB build settings")
+message(STATUS "CMAKE_CXX_FLAGS_RELEASE=" ${CMAKE_CXX_FLAGS_RELEASE})
+message(STATUS "CMAKE_SHARED_LINKER_FLAGS=" ${CMAKE_SHARED_LINKER_FLAGS})
+message(STATUS "LIBRARY_DEPENDENCIES=" ${LIBRARY_DEPENDENCIES})
+
+SET(MEX_IO ${SRC_DIR}/mex/mex_io.cpp)
+
+function(add_mex TARGET CPP) # example: add_mex(my_mex ${CPP})
+	LIST(REMOVE_AT ARGV 0)
+	SET(CPP ${ARGV}) # this is the hack around to pass in a list
+	#list(APPEND CPP ${SRC_DIR}/mex/mex_io.cpp)
+	#list(APPEND CPP ${MEX_IO})
+	message(STATUS "add_mex(" ${TARGET} ",[" ${CPP} "])")
+
+	#list(GET ${CPP} 0 CPP0)
+	#get_filename_component(TPATH ${CPP0} PATH)
+	#source_group_path(${TPATH} FILES ${CPP})
+	
+	source_group("\\" FILES ${CPP})
+        add_library(${TARGET} SHARED ${CPP})
+
+	set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME ${TARGET} IMPORT_SUFFIX ".${MATLAB_MEXEXT}" IMPORT_PREFIX "" PREFIX "")
+	target_link_libraries(${TARGET} ${MYLIBS} ${LIBRARY_DEPENDENCIES})
+	add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_COMMAND} -E make_directory ${MEX_INSTALL_PATH})
+	add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGET}> ${MEX_INSTALL_PATH}/${TARGET}.${MEXEXT})
+endfunction()
+
+function(add_cuda_mex TARGET CPP) # example: add_cuda_mex(my_mex ${CPP})
+	LIST(REMOVE_AT ARGV 0)
+	SET(CPP ${ARGV}) # this is the hack around to pass in a list
+	#list(APPEND CPP ${MEX_IO})
+	message(STATUS "add_cuda_mex(" ${TARGET} ",[" ${CPP} "])")
+
+	#list(GET ${CPP} 0 CPP0)
+	#get_filename_component(TPATH ${CPP0} PATH)
+	#source_group_path(${TPATH} FILES ${CPP})
+	
+	source_group("\\" FILES ${CPP})
+	cuda_add_library(${TARGET} ${CPP} ${HH})
+
+	set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME ${TARGET} IMPORT_SUFFIX ".${MATLAB_MEXEXT}" IMPORT_PREFIX "" PREFIX "")
+	target_link_libraries(${TARGET} ${MYLIBS} ${LIBRARY_DEPENDENCIES})
+	add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_COMMAND} -E make_directory ${MEX_INSTALL_PATH})
+	add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGET}> ${MEX_INSTALL_PATH}/${TARGET}.${MEXEXT})
+endfunction()

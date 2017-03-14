@@ -1,0 +1,16 @@
+# MSVC settings
+#
+IF (MSVC)
+  # Disable deprecation warning for standard functions.
+  ADD_DEFINITIONS("/wd4996")
+  ADD_DEFINITIONS("/wd4005")
+  # To get rid of annoying min and max macros if windows.h
+  ADD_DEFINITIONS(-DNOMINMAX=1)
+  ADD_DEFINITIONS(-D__STDC_UTF_16__)
+  ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
+  ADD_DEFINITIONS(-D_STL_SECURE_NO_WARNINGS)
+ELSE()
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w -fpermissive -fPIC")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -w -fpermissive -O2 -fPIC")
+ 
+ENDIF (MSVC)

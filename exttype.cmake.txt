@@ -1,0 +1,21 @@
+PROJECT( exttype )
+SET (SRC_DIR ascode)
+
+#____________exttype lib________________ 
+SET(CPP)
+list(APPEND CPP 
+  ${SRC_DIR}/dynamic/block_allocator.cpp
+  # ${SRC_DIR}/data/dataset.cpp
+  ${SRC_DIR}/exttype/pvect.cpp
+  # ${SRC_DIR}/geom/vectn.cpp
+  # ${SRC_DIR}/files/xfs.cpp
+  ${SRC_DIR}/debug/logs.cpp
+  ${SRC_DIR}/debug/performance.cpp
+  ${SRC_DIR}/streams/xstringstream.cpp
+  ${SRC_DIR}/streams/file_stream.cpp
+  ${SRC_DIR}/streams/binary_stream.cpp
+  ${SRC_DIR}/streams/text_stream.cpp
+)
+
+my_add_library(exttype ${CPP})
+
