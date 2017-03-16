@@ -4,7 +4,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS} --std=c++11 -Wunused
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -expt-extended-lambda -ftemplate-backtrace-limit=2 -lineinfo --std=c++11")
 set(CUDA_PROPAGATE_HOST_FLAGS OFF)
 
-if(BUILD_RELEASE OR CMAKE_BUILD_TYPE STREQUAL "Release") #RELEASE 
+if(BUILD_RELEASE OR CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo") #RELEASE 
   add_flags(CMAKE_CXX_FLAGS "-fopenmp -O2 -DPARALLEL -ffast-math -DNDEBUG")
   add_flags(CUDA_NVCC_FLAGS "-O2 -keep -src-in-ptx -DNDEBUG")
 	# warn about local memory and register spills
